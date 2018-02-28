@@ -1,8 +1,8 @@
 # This .travis.yml is modified from the sample at
 # https://docs.haskellstack.org/en/stable/GUIDE/#travis-with-caching
 
-# Use new container infrastructure to enable caching
-sudo: false
+# Allow sudo to enable 'mount'
+sudo: true
 
 # Do not choose a language; we provide our own build tools.
 language: generic
@@ -10,10 +10,7 @@ language: generic
 # Caching so the next build will be fast too.
 cache:
   directories:
-  - $HOME/.ghc
-  - $HOME/.cabal
-  - $HOME/.stack
-  - .stack-work
+  - $HOME/drives
 
 # The different configurations we want to test. We have BUILD=cabal which uses
 # cabal-install, and BUILD=stack which uses Stack. More documentation on each
@@ -37,6 +34,36 @@ matrix:
   fast_finish: true
 
 before_install:
+# Create drives for ~/.stack and .stack-work, or unpack them if they exist
+# in cache (we need to pack with tar --sparse because otherwise the cache
+# would take 40GB)
+- mkdir -p $HOME/drives
+- pushd $HOME/drives
+- |
+  if [ -f stack.img.tar ]; then
+    tar -xvf stack.img.tar stack.img
+    rm stack.img.tar
+  else
+    truncate -s 20G stack.img
+    mkfs -F -t ext4 stack.img
+  fi
+- |
+  if [ -f stack-work.img.tar ]; then
+    tar -xvf stack-work.img.tar stack-work.img
+    rm stack-work.img.tar
+  else
+    truncate -s 20G stack-work.img
+    mkfs -F -t ext4 stack-work.img
+  fi
+- popd
+# Mount ~/.stack
+- rm -rf $HOME/.stack && mkdir $HOME/.stack
+- sudo mount $HOME/drives/stack.img $HOME/.stack
+- sudo chown -R $USER $HOME/.stack
+# Mount .stack-work
+- rm -rf .stack-work && mkdir .stack-work
+- sudo mount $HOME/drives/stack-work.img .stack-work
+- sudo chown -R $USER .stack-work
 # Using compiler above sets CC to an invalid value, so unset it
 - unset CC
 - export PATH=/opt/happy/1.19.5/bin/:/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$HOME/.local/bin:$HOME/.cabal/bin:$PATH
@@ -85,3 +112,14 @@ script:
       cabal test
       ;;
   esac
+
+before_cache:
+- sudo umount .stack-work
+- sudo umount $HOME/.stack
+- pushd $HOME/drives
+- echo "actual size taken by cached .img files (drives)"
+- ls -lahts *.img
+- tar -cSvf stack.img.tar stack.img
+- tar -cSvf stack-work.img.tar stack-work.img
+- rm *.img
+- popd
