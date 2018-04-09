@@ -1,4 +1,4 @@
-workspace(name = "YOUR_PROJECT_NAME_HERE")
+workspace(name = "Pandoc")
 
 http_archive(
   name = "io_tweag_rules_haskell",

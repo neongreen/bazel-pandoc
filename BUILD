@@ -13,7 +13,7 @@ haskell_toolchain(
 )
 
 haskell_library(
-  name = "MY_LIBRARY_NAME",
+  name = "pandoc",
   src_strip_prefix = "src",
   srcs = glob(['src/**/*.hs']),
   prebuilt_dependencies = ["base"],
