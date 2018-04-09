@@ -17,9 +17,14 @@ http_archive(
 
 load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_package")
 
+load(":deps.bzl", "PANDOC_DEPS")
+
 nixpkgs_package(
   name = "ghc",
-  attribute_path = "haskell.compiler.ghc822",
+  nix_file_content = """
+let pkgs = import <nixpkgs> {{}};
+in pkgs.haskell.packages.ghc822.ghcWithPackages (p: with p; [{0}])
+""".format(" ".join(PANDOC_DEPS)),
 )
 
 register_toolchains("//:ghc")

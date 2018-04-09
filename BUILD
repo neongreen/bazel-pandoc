@@ -12,9 +12,11 @@ haskell_toolchain(
   tools = "@ghc//:bin",
 )
 
+load(":deps.bzl", "PANDOC_DEPS")
+
 haskell_library(
   name = "pandoc",
   src_strip_prefix = "src",
   srcs = glob(['src/**/*.hs']),
-  prebuilt_dependencies = ["base"],
+  prebuilt_dependencies = PANDOC_DEPS,
 )
